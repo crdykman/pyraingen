@@ -48,16 +48,16 @@ def targetStations(param, param_path, genSeqOption3, stnDetails):
     # read additional data from our genSeqOption3 data to become our
     # reference.
     if param['targetIndex'] in stnDetails['stnIndex']:
-        idxTarget = np.where(stnDetails['stnIndex']==param['targetIndex'])
+        idxTarget = np.where(stnDetails['stnIndex'] == param['targetIndex'])
     else:
         idxTarget = np.size(stnDetails['stnIndex'], axis=0)
         #assuming all arrays are of same length so indicies match
-        stnDetails['stnIndex'] =  np.append(stnDetails['stnIndex'], idxTarget)
-        stnDetails['stnLat'] = np.append(stnDetails['stnLat'], genSeqOption3['lat'])
-        stnDetails['stnLon'] = np.append(stnDetails['stnLon'], genSeqOption3['lon'])
+        stnDetails['stnIndex']     = np.append(stnDetails['stnIndex'], idxTarget)
+        stnDetails['stnLat']       = np.append(stnDetails['stnLat'], genSeqOption3['lat'])
+        stnDetails['stnLon']       = np.append(stnDetails['stnLon'], genSeqOption3['lon'])
         stnDetails['stnElevation'] = np.append(stnDetails['stnElevation'], genSeqOption3['elevation'])
         stnDetails['stnDistCoast'] = np.append(stnDetails['stnDistCoast'], genSeqOption3['distToCoast'])
-        stnDetails['stnTemp'] = np.append(stnDetails['stnTemp'], genSeqOption3['temperature'])
+        stnDetails['stnTemp']      = np.append(stnDetails['stnTemp'], genSeqOption3['temperature'])
 
     ## Allocate Ram
     nearStationIdx = np.zeros((nSeasons,(np.size(stnDetails['stnIndex'], axis=0))))
@@ -91,12 +91,14 @@ def targetStations(param, param_path, genSeqOption3, stnDetails):
                 - stnDetails['stnLon'][loopStation])
                 )
             deltaDistToCoast = ((np.abs(stnDetails['stnDistCoast'][idxTarget] 
-                - stnDetails['stnDistCoast'][loopStation])*2) 
-                / (np.abs(stnDetails['stnDistCoast'][idxTarget] 
-                + stnDetails['stnDistCoast'][loopStation]))
+                - stnDetails['stnDistCoast'][loopStation]) 
+                / ((np.abs(stnDetails['stnDistCoast'][idxTarget] 
+                + stnDetails['stnDistCoast'][loopStation]))/2)
                 )
             deltaElevation = (np.abs(stnDetails['stnElevation'][idxTarget]
                 - stnDetails['stnElevation'][loopStation])
+                / ((np.abs(stnDetails['stnElevation'][idxTarget] 
+                + stnDetails['stnElevation'][loopStation]))/2)                                                                 
                 )
             deltaLatLon = deltaLat * deltaLon
             deltaTemp = (np.abs(stnDetails['stnTemp'][idxTarget]
