@@ -1,11 +1,11 @@
-from numba import njit, prange
+from numba import njit
 from numba.typed import List
 import numpy as np
 import random
 
 from .subdailydisaggregation import subDailyDisaggregation
 
-@njit(parallel=True)
+@njit
 def subDailySimLoop1(nSims, nDailySims, targetDailyRain, param,
                     nGoodDays, fragments, fragmentsState, fragmentsDailyDepth):
     """Loops through nSims performing sub-daily disaggregation.
@@ -42,7 +42,7 @@ def subDailySimLoop1(nSims, nDailySims, targetDailyRain, param,
     # the user has asked for 100 simulations, say, but the source only
     # has 50.
     subDailySims = List()
-    for loopSim in prange(nSims):
+    for loopSim in range(nSims):
         if loopSim+1 > nDailySims:
             simCounter = random.randrange(nDailySims)
         else:

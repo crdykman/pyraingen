@@ -1,10 +1,10 @@
-from numba import njit, prange
+from numba import njit
 from numba.typed import List
 import numpy as np
 
 from .subdailydisaggregation import subDailyDisaggregation
 
-@njit(parallel=True)
+@njit
 def subDailySimLoop0(nSims, targetDailyRain, param, nGoodDays, 
                         fragments, fragmentsState, fragmentsDailyDepth):
     """Loops through nSims performing sub-daily disaggregation.
@@ -38,7 +38,7 @@ def subDailySimLoop0(nSims, targetDailyRain, param, nGoodDays,
         List of arrays (one for each simulation) of size (recordsPerDay, nDays).
     """
     subDailySims = List()
-    for loopSim in prange(nSims):
+    for loopSim in range(nSims):
         subDailySim = subDailyDisaggregation(targetDailyRain, param,
                 nGoodDays, fragments, fragmentsState, fragmentsDailyDepth)
         subDailySims.append(subDailySim)
