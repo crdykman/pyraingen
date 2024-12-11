@@ -489,17 +489,36 @@ def regionalisedsubdailysim(fnameInput, pathSubDaily, pathIndex,
 
     ## Step 2 b) Dissagregation Loop
     print('Step 2 b) Performing subdaily disaggregation')
-    from .subdailysimloop0 import subDailySimLoop0
-    from .subdailysimloop1 import subDailySimLoop1
+    # from .subdailysimloop0 import subDailySimLoop0
+    # from .subdailysimloop1 import subDailySimLoop1
+    from joblib import Parallel, delayed
+    from .subdailydisaggregation import subDailyDisaggregation
 
 
     if param['genSeqOption'] >=0 and param['genSeqOption'] < 3:
-        results = subDailySimLoop0(int(param['nSims']), targetDailyRain, param, nGoodDays, 
-                            fragments, fragmentsState, fragmentsDailyDepth) 
+        if __name__ == "__main__":
+            results = Parallel(n_jobs=-1, prefer="threads")(delayed(subDailyDisaggregation)(
+                                                    targetDailyRain, 
+                                                    param,nGoodDays, 
+                                                    fragments, 
+                                                    fragmentsState, 
+                                                    fragmentsDailyDepth) for i in range(int(param['nSims']))) 
     elif param['genSeqOption'] >=3 and param['genSeqOption'] <= 4:
-        results = subDailySimLoop1(int(param['nSims']), nDailySims, targetDailyRain, param,
-                            nGoodDays, fragments, fragmentsState, 
-                            fragmentsDailyDepth)
+        if param['nSims'] > nDailySims:
+            # This is to handle recycling if the user has asked for 100 simulations, 
+            # say, but the source only has 50.
+            diff = param['nSims'] - nDailySims
+            nSims = [*range(int(nDailySims))] + random.choices(range(int(nDailySims)), k=diff)
+        else:
+            nSims = range(int(param['nSims']))
+        
+        if __name__ == "__main__":
+            results = Parallel(n_jobs=-1, prefer="threads")(delayed(subDailyDisaggregation)(
+                                                    targetDailyRain[:, int(i)].astype(np.float64), 
+                                                    param, nGoodDays, 
+                                                    fragments, 
+                                                    fragmentsState, 
+                                                    fragmentsDailyDepth) for i in nSims)
     else:
         print("Unsupported genSeqOption value. Must be >= 0 and <= 4")
 
