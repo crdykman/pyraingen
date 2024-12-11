@@ -95,7 +95,7 @@ def dailySequences(nSeasons,
                 dayVecEnd = jdToDateVec(daySeries[-1])
                 yearStart = int(dayVecStart[0])
                 yearEnd = int(dayVecEnd[0])
-                tmpSubDaily = ds['rainfall'][:].data
+                tmpSubDaily = ds['rainfall'][:].data/10
                 # The algorithm below works on the assumption that the
                 # tmpSubDaily array is populated with full years.  So pad out
                 # the data array to make full years with missingDay values.

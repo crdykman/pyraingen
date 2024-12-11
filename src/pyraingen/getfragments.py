@@ -108,7 +108,7 @@ def getFragments(nSeasons, nGoodDays, dailyWetState, dailyDepth, stnDetails, nea
                     - date.toordinal(date(yearStart,1,1))+1)
 
                 tmpSubDaily = np.ones((nDaysKnown, recordsPerDay,)) * missingDay #dimensions flipped
-                tmpSubDaily[dataIdxStart:dataIdxEnd, :] = ds['rainfall'][:].data #
+                tmpSubDaily[dataIdxStart:dataIdxEnd, :] = ds['rainfall'][:].data/10 #
                 
                 # This is the index into the days dimension of tmpSubDaily
                 idxDayLinear = 0
