@@ -14,6 +14,8 @@ numba = ">=0.56.4"
 netCDF4 = ">=1.6.2"
 scipy = ">=1.9.3"
 joblib = ">=1.4.2"
+pandas = "1.5.3"
+xarray = "2023.01.0"
 
 [tool.poetry.dev-dependencies]
 myst-nb = {version = "^0.17.1", python = "^3.8"}
