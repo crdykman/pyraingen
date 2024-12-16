@@ -16,7 +16,7 @@ def regionaliseddailysim(nyears, startyear, nsim,
                             targettemp, data_path,
                             pathStnData=None, pathModelCoeffs=None,
                             output_path_nc='daily.nc',
-                            output_stats="stat_.out", output_val="rev_.out",
+                            output_stats='stat_.out', output_val='rev_.out',
                             cutoff=0.30, wind=15, nstation=5, 
                             nlon=3, lag=1, iamt=1, ival=0, irf=1, rm=1.0,
                             getstations=True):
@@ -98,7 +98,6 @@ def regionaliseddailysim(nyears, startyear, nsim,
     getstations : boolean
         Get nearby stations or use existing "nearby_station_details.out"
         Default is True        
-
 
     Returns
     ----------   

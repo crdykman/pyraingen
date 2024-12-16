@@ -38,12 +38,12 @@ def produceDailyNetCDF(fnameNC, DailyData, dayVector,**kwargs):
     ----------
     Bool
         status: true for OK, false for an error.
-"""
-#   Dr Peter Brady <peter.brady@wmawater.com.au>
-#   2016-08-26
+    """
+    #   Dr Peter Brady <peter.brady@wmawater.com.au>
+    #   2016-08-26
 
-#  Caleb Dykman
-#  2022-07-15
+    #  Caleb Dykman
+    #  2022-07-15
 
     ## Check of the file exists
     if os.path.exists(fnameNC):

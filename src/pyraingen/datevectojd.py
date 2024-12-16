@@ -30,9 +30,9 @@ def datevecToJD(dateVector):
     ----------
     float
         Resultant Julian Date.
-    """""
-    #   Dr Peter Brady <peter.brady@wmawater.com.au>
-    #   2016-08-26
+    """
+    #  Dr Peter Brady <peter.brady@wmawater.com.au>
+    #  2016-08-26
 
     #  Caleb Dykman
     #  2021-09-27
@@ -43,7 +43,6 @@ def datevecToJD(dateVector):
         'Out of year range, this algorithm is restricted to the '
         'range: 1801 <= year <= 2099')
     
-
     year   = dateVector.year #dateVector[0]
     month  = dateVector.month #dateVector[1]
     day    = dateVector.day #dateVector[2]
@@ -64,4 +63,4 @@ def datevecToJD(dateVector):
         - 0.5 * np.sign(100 * year + month - 190002.5) + 0.5
     )
 
-    return julianDate  
+    return julianDate

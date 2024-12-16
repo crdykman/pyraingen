@@ -5,6 +5,31 @@ import math
 from importlib import resources
 
 def station(param, target, nAttributes=33, fout='nearby_station_details.out'):
+    """Algorithm for finding nearby daily stations. 
+
+    Parameters
+    ----------
+    param : dict
+        parameter dictionary requiring 'nNearStns', 
+        'pathStnData', 'pathModelCoeffs', 'pathDailyData'.
+    target : dict 
+        target data dictionary requiring 'index', 
+        'lat', 'lon', 'elevation', 'distToCoast', and
+        'annualRainDepth'.
+    nAttributes : int
+        Number of attributes of similarity. Leave as default.
+        default = 33.
+    fout : str
+        Path to save output. Leave as default.
+        Default is 'nearby_station_details.out'.
+
+    Returns
+    ----------
+    str
+        Prints nearby daily stations.
+        Saves text file of nearby daily stations
+        to specified file path.
+    """    
     ## Read the Station Data
     # Get Data
     if param['pathStnData'] == None:
