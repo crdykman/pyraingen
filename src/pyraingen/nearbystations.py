@@ -1,3 +1,4 @@
+from importlib import resources
 
 from .loadsubdailystationmeta import loadSubDailyStationMeta
 from .targetstations import targetStations
@@ -75,6 +76,13 @@ def nearbystations(pathIndex, pathCoeff, targetIndex,
     # genSeqOption = 3/4
 
     param_path = {}
+    # Get Data
+    if pathIndex == None:
+        with resources.path("pyraingen.data", "index.nc") as f:
+            pathIndex = str(f)
+    if pathCoeff == None:
+        with resources.path("pyraingen.data", "coefficients.dat") as f:
+            pathCoeff = str(f)
     # Path to index data
     param_path['pathIndex'] = pathIndex
     # Path to Coefficients

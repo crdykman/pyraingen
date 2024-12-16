@@ -2,9 +2,14 @@ import numpy as np
 import pandas as pd
 import xarray as xr
 import math
+from importlib import resources
 
 def station(param, target, nAttributes=33, fout='nearby_station_details.out'):
     ## Read the Station Data
+    # Get Data
+    if param['pathStnData'] == None:
+        with resources.path("pyraingen.data", "stn_record.csv") as f:
+            param['pathStnData'] = str(f)
     stnData = pd.read_csv(param['pathStnData']).to_xarray()
 
     # Allocate RAM
@@ -30,6 +35,9 @@ def station(param, target, nAttributes=33, fout='nearby_station_details.out'):
     stnToUse = stnData.sel(index = canUseStation)
 
     ## Read the Coefficients Data
+    if param['pathModelCoeffs'] == None:
+        with resources.path("pyraingen.data", "daily_logreg_coefs.csv") as f:
+            param['pathModelCoeffs'] = str(f)
     modelCoeffs = np.transpose(pd.read_csv(param['pathModelCoeffs']).values)
 
     ## Loop over the Stations
