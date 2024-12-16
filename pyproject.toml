@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "pyraingen"
-version = "0.2.3"
+version = "1.0.0"
 description = "A package for stochastically generating daily and subdaily rainfall in Australia with ifd constraining."
 authors = ["Caleb Dykman"]
 license = "None"
