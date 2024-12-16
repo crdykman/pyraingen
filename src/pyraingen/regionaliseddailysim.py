@@ -2,8 +2,10 @@ import numpy as np
 import pandas as pd
 import xarray as xr
 import os
+import copy
+from importlib import resources
 
-from .fortran_daily import regionalised_dailyT
+from .fortran_daily import regionalised_dailyT4
 from .get_fortran_data import copy_fortran_data
 from .convert_daily_to_NetCDF import convertdailync
 from .getnearbystations import station
@@ -11,11 +13,13 @@ from .getnearbystations import station
 def regionaliseddailysim(nyears, startyear, nsim,
                             targetidx, targetlat, targetlon, 
                             targetelev, targetdcoast, targetanrf,
-                            targettemp, data_path, output_path_txt, 
+                            targettemp, data_path,
+                            pathStnData=None, pathModelCoeffs=None,
                             output_path_nc='daily.nc',
                             output_stats="stat_.out", output_val="rev_.out",
                             cutoff=0.30, wind=15, nstation=5, 
-                            nlon=3, lag=1, iamt=1, ival=0, irf=1, rm=1):
+                            nlon=3, lag=1, iamt=1, ival=0, irf=1, rm=1.0,
+                            getstations=True):
     """Front end to the regionalised daily rainfall generator.
     For a detailed description of the approach refer to: 
     Mehrotra et al (2012) "Continuous Rainfall simulation: 2.
@@ -47,9 +51,12 @@ def regionaliseddailysim(nyears, startyear, nsim,
         Path to historical daily rainfall data. Must not be longer than 72 characters.
     output_path_txt : str
         Name and location for output text file. Must not be longer than 72 characters.
-    netcdf : bool
-        True for output in netcdf format. False for only text file output.
-        Default is True.
+    pathStnData : str
+        Name and location for station record csv. Leave as default unless using own file.
+        Default = None.
+    pathModelCoeffs : str
+        Name and location for daily logistic regression coefficients. Leave as default unless using own file.
+        Default = None.        
     output_path_nc : str
         Name and location for output netcdf.
         Default is 'daily.nc' in working directory.
@@ -84,36 +91,33 @@ def regionaliseddailysim(nyears, startyear, nsim,
         Default is 0.
     irf : int
         Leave at default.
-        Default is 1. 
+        Default is 1.
+    rm : float
+        Rainfall multiplier to scale mean annual rainfall.
+        Default is 1.0
+    getstations : boolean
+        Get nearby stations or use existing "nearby_station_details.out"
+        Default is True        
 
 
     Returns
-    ----------
-    text file
-        Saves text file of daily simulations to specified file path.
-    
+    ----------   
     netCDF
-        if netcdf boolean is True, Saves netCDF of daily simulations to specified file path.    
+        Saves netCDF of daily simulations to specified file path.    
     """
     
-    # Check if file exists
-    if os.path.exists("drop.out"):
-        os.remove("drop.out")
-    if os.path.exists("nearby_station_details.out"):
-        os.remove("nearby_station_details.out")
-    
     # Input parameters
-    rain     = str(cutoff) + ' '
-    iband    = str(wind)  + ' '
-    nstation = str(nstation)  + ' ' 
-    nsim     = str(nsim)  + ' '
-    nlon     = str(nlon) + ' ' 
-    lag      = str(lag) + ' '
-    ng       = str(nyears) + ' '
-    nsgtart  = str(startyear) + ' '
-    iamt     = str(iamt) + ' '
-    ival     = str(ival) + ' '
-    irf      = str(irf) + ' '
+    rain      = str(cutoff) + ' '
+    iband     = str(wind)  + ' '
+    nstations = str(nstation)  + ' ' 
+    nsim      = str(nsim)  + ' '
+    nlon      = str(nlon) + ' ' 
+    lag       = str(lag) + ' '
+    ng        = str(nyears) + ' '
+    nsgtart   = str(startyear) + ' '
+    iamt      = str(iamt) + ' '
+    ival      = str(ival) + ' '
+    irf       = str(irf) + ' '
     
     # Target station details
     idx    = str(targetidx) + ' '
@@ -130,35 +134,54 @@ def regionaliseddailysim(nyears, startyear, nsim,
     with open("data_r.dat",'r') as file:
         data_r = file.readlines()
 
-    data_r[2] = ' ' + rain + iband + nstation + nsim + nlon + lag + ng + nsgtart + iamt + ival + irf +'\n'
+    data_r[2] = ' ' + rain + iband + nstations + nsim + nlon + lag + ng + nsgtart + iamt + ival + irf +'\n'
     data_r[10] = ' ' + idx + lat + lon + elev + dcoast + anrf + temp + '\n'
     data_r[12] = data_path +'\n'
-    data_r[14] = output_path_txt +'\n'
+    data_r[14] = f"mmm_{targetidx}.out" +'\n'
     data_r[16] = output_stats +'\n'
     data_r[18] = output_val +'\n'
 
     with open("data_r.dat",'w') as file:
         file.writelines(data_r)
 
-    # Get Nearby Stations
-    param = {}
-    param['nNearStns']       = nstation
-    param['pathStnData']     = 'data/stn_record.csv'
-    param['pathModelCoeffs'] = 'data/daily_logreg_coefs.csv'
-    param['pathDailyData']   = data_path
     
-    target = {}
-    target['index']           = idx             
-    target['lat']             = lat               
-    target['lon']             = lon               
-    target['elevation']       = elev              
-    target['distToCoast']     = dcoast       
-    target['annualRainDepth'] = anrf
-    target['temp']            = temp    
+    if getstations:
+        # Check if file exists
+        if os.path.exists("nearby_station_details.out"):
+            os.remove("nearby_station_details.out")
+        
+        # Get Data
+        if pathStnData == None:
+            with resources.path("pyraingen.data", "stn_record.csv") as f:
+                pathStnData = str(f)
+        if pathModelCoeffs == None:
+            with resources.path("pyraingen.data", "daily_logreg_coefs.csv") as f:
+                pathModelCoeffs = str(f)
+     
+        # Get Nearby Stations
+        param = {}
+        param['nNearStns']       = nstation
+        param['pathStnData']     = pathStnData
+        param['pathModelCoeffs'] = pathModelCoeffs
+        param['pathDailyData']   = data_path
+        
+        target = {}
+        target['index']           = targetidx             
+        target['lat']             = targetlat               
+        target['lon']             = targetlon               
+        target['elevation']       = targetelev              
+        target['distToCoast']     = targetdcoast       
+        target['annualRainDepth'] = targetanrf
+        target['temp']            = targettemp    
+        
+        print("\nFinding nearby stations...\n")
+        station(param, target, nAttributes=33,
+            fout=f'nearby_station_details.out'
+        )
     
-    station(param, target, nAttributes=33,
-        fout=f'nearby_station_details.out'
-    )
+    # Check if file exists
+    # if os.path.exists("drop.out"):
+        # os.remove("drop.out")
     
     # Begin simulation
     regionalised_dailyT4.regionalised_daily(idrop=0)
@@ -198,15 +221,19 @@ def regionaliseddailysim(nyears, startyear, nsim,
         # if break_out_flag:
             # break
     
-    convertdailync(output_path_txt, output_path_nc, startyear, nyears, nsim, missingDay=-999.9)
-    #remove textfile
-    if os.path.exists(output_path_txt):
-        os.remove(output_path_txt)
     
-    ## Bias Correct and/or Scale Rainfall
+    convertdailync(f"mmm_{targetidx}.out", output_path_nc, startyear, nyears, nsim, missingDay=-999.9)
+    #remove textfile
+    if os.path.exists(f"mmm_{targetidx}.out"):
+        os.remove(f"mmm_{targetidx}.out")
+    
+    # Bias Correct and/or Scale Rainfall
     daily_rain = xr.open_dataset(output_path_nc)
     daily_rain['day'] = pd.to_datetime(daily_rain['day'], unit='D', origin='julian')
     smanrf = daily_rain['rainfall'].resample(day="A").sum().mean()
-    daily_rain['rainfall'] = daily_rain['rainfall'] * (anrf * rm)/smanrf
-    daily_rain.to_netcdf(output_path_nc)
-    
+    daily_rain.close()
+    del daily_rain
+    daily_rain_bc = xr.open_dataset(output_path_nc)    
+    daily_rain_bc['rainfall'] *= (targetanrf * rm)/smanrf
+    daily_rain_bc.close()
+    daily_rain_bc.to_netcdf(output_path_nc)

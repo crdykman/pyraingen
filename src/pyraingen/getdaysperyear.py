@@ -35,7 +35,7 @@ def getDaysPerYear(year):
     ## Input Check
     if year < validYearStart  or year > validYearEnd:
         print(
-            'getDaysPerYear has been validated over the year range ' +
+            f'getDaysPerYear has not been validated for the year {year}. Only over the year range ' +
             str(validYearStart) +
             ' - ' +
             str(validYearEnd)

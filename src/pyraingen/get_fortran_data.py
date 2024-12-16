@@ -51,4 +51,4 @@ def copy_fortran_data():
             src_pth = f
         shutil.copy(src_pth, "data_r.dat")
 
-    print("Copied")
+    # print("Copied")

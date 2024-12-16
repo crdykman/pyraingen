@@ -147,3 +147,19 @@ def station(param, target, nAttributes=33, fout='nearby_station_details.out'):
                 nearbyStn['startYear'][loopwrite],
                 nearbyStn['avAnRain'][loopwrite])
         )
+        
+    ## Write nearby station details file
+    print('    No Index Weight Years St_year Av annual rainfall')
+    print(' target Station')
+    print(f"     0 {target['index']}  1.000     0    -1   {target['annualRainDepth']}")
+    print(' Nearby Stations')
+    for loopprint in range(param['nNearStns']):
+        print('%6d%6d%7.3f%6d%6d%10.2f' % 
+            (loopprint+1,
+            nearbyStn['stnIndex'][loopprint],
+            nearbyStn['weight'][loopprint],
+            nearbyStn['nYears'][loopprint],
+            nearbyStn['startYear'][loopprint],
+            nearbyStn['avAnRain'][loopprint])
+    )
+    print()

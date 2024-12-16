@@ -16,8 +16,8 @@ c      Implicit double precision (A-H,O-Z)
       include  'para.inc'
       include  'data.inc'
       parameter (nsmax=5000)
-      character file_rf_out*80,nearby*80,filet*80
-      character fpath*80,file_stat_out*280,hh*280
+      character file_rf_out*280,nearby*280,filet*280
+      character fpath*280,file_stat_out*280,hh*280
       real*4    w(nstnmax),rfh(nstnmax,nyrmax,monmax,ndmax)
       real*4    avrf(nstnmax)
       integer   idx(nstnmax),idr(nsmax)

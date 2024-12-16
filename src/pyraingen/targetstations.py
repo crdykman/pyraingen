@@ -90,7 +90,7 @@ def targetStations(param, param_path, genSeqOption3, stnDetails):
             deltaLon = (np.abs(stnDetails['stnLon'][idxTarget] 
                 - stnDetails['stnLon'][loopStation])
                 )
-            deltaDistToCoast = ((np.abs(stnDetails['stnDistCoast'][idxTarget] 
+            deltaDistToCoast = (np.abs(stnDetails['stnDistCoast'][idxTarget] 
                 - stnDetails['stnDistCoast'][loopStation]) 
                 / ((np.abs(stnDetails['stnDistCoast'][idxTarget] 
                 + stnDetails['stnDistCoast'][loopStation]))/2)

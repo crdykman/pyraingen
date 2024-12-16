@@ -629,12 +629,15 @@ def ifdcond(fileNameInput, fileNameOutput, fileNameTargetIFD,
                 del tmp
 
     if plot == True:
-        fig, ax = plt.subplots(nrows=len(TargetIFDduration), ncols=1, figsize=(10,20))
+        fig, ax = plt.subplots(nrows=len(TargetIFDduration), ncols=1, figsize=(10,len(TargetIFDduration)*5))
         for i in range(len(TargetIFDduration)):
             # Raw IFD
-            ax[i].set_xlabel('Frequency (years)')
-            ax[i].set_ylabel('Depth (mm)')
-            ax[i].fill_between(np.arange(50), 
+            if i == len(TargetIFDduration)-1:
+                ax[i].set_xlabel('Frequency (years)', fontsize=14)
+            else:
+                ax[i].set_xlabel('')
+            ax[i].set_ylabel('Depth (mm)', fontsize=14)
+            ax[i].fill_between(np.arange(len(years)), 
                                 IFDRaw[:,:,i].max(axis=1),
                                 IFDRaw[:,:,i].min(axis=1),
                                 alpha=0.1, label='Raw Simulations Range')
@@ -642,15 +645,16 @@ def ifdcond(fileNameInput, fileNameOutput, fileNameTargetIFD,
                         linewidth=2, alpha=0.8, 
                         label=f'Raw Median Depth-Frequency {TargetIFDduration[i]} min')
             #Conditioned IFD
-            ax[i].fill_between(np.arange(50), 
+            ax[i].fill_between(np.arange(len(years)), 
                                 IFDCorrected[:,:,i].max(axis=1),
                                 IFDCorrected[:,:,i].min(axis=1),
                                 alpha=0.1, label='Cond Simulations Range')
             ax[i].plot(np.median(IFDCorrected[:,:,i], axis=1),
                         linewidth=2, alpha=0.8, 
                         label=f'Cond Median Depth-Frequency {TargetIFDduration[i]} min')
-            ax[i].legend()
-        plt.show()
+            ax[i].set_xscale('log')
+            if i == 0:
+                ax[i].legend()
         fig.savefig('ifdcond_plot.png')
     
     ## Dump the Processed Time Series to a NetCDF

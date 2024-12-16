@@ -8,11 +8,11 @@ Name of file to write the details of nearby stations
 nearby_station_details.out
 Target station details
 index    latitude   longitude elevation(m)  distance to coast(km) annual rainfall (mm)
- 66037 -33.941 151.173 6.0 0.27 1086.71 
+ 66037 -33.941 151.173 6.0 0.27 1086.71 22.4 
 Path name where data files are stored
 C:/Users/z3460382/daily_data/
 Name of output file where simulated daily rainfall is stored
-mmm_066037.out
+mmm_66037.out
 Name of output file where statistices of observed and simulated daily rainfall is stored
 stat_.out
 data file name of the target station for validation(required if ival is >0)
