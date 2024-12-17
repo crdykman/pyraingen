@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.0.2 (18/12/2022)
+
+- Fix bug in get get_example_data.py
+
+## v1.0.1 (17/12/2022)
+
+- set dependencies in pyproject.toml as static 
+
 ## v1.0.0 (16/12/2022)
 
 - Major update to regionalised daily sim nearby site selection.

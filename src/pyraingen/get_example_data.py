@@ -25,21 +25,21 @@ def get_example_data(dname=None, daily=True, subdaily=True, ifd=True):
         dname = os.getcwd()
     
     if daily == True:
-        with resources.path("pyraingen.data.example.daily", "daily.nc") as f:
+        with resources.path("pyraingen.data.example.daily", "rev_dr061003.txt") as f:
             src_pth = str(f)
-        source_dir = src_pth[:-14]
+        source_dir = src_pth[:-16]
         shutil.copytree(source_dir, dname+"/daily")
     
     if subdaily == True:
-        with resources.path("pyraingen.data.example.subdaily", "subdaily.nc") as f:
+        with resources.path("pyraingen.data.example.subdaily", "daily.nc") as f:
             src_pth = str(f)
-        source_dir = src_pth[:-16]
+        source_dir = src_pth[:-8]
         shutil.copytree(source_dir, dname+"/subdaily")
     
     if ifd == True:
-        with resources.path("pyraingen.data.example.ifd", "condsubdaily.nc") as f:
+        with resources.path("pyraingen.data.example.ifd", "subdaily.nc") as f:
             src_pth = str(f)
-        source_dir = src_pth[:-18]
+        source_dir = src_pth[:-11]
         shutil.copytree(source_dir, dname+"/ifd")
 
     print("Copied")

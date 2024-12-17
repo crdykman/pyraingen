@@ -57,13 +57,13 @@ def regionalisedsubdailysim(fnameInput, pathSubDaily, targetIndex,
                             absDiffTol=0.1, gso3_lat=None, gso3_lon=None,
                             gso3_elev=None, gso3_distcoast=None, 
                             gso3_anrf=None, gso3_temp=None):
-    """Front end to the regionalised sub-daily
-    disaggregation code.
+    """Front end to the regionalised sub-daily disaggregation code.
 
     Options (genSeqOption) included:\n
     0. Only sub daily data is available. 
         - Daily data is formed from the subdaily record and is used for disaggregation.\n
-    1. Daily and sub-daily rainfall data at target station is available \n(daily record comes from other source and therefore may be of different length to sub-daily record).
+    1. Daily and sub-daily rainfall data at target station is available \n
+        - daily record comes from other source and therefore may be of different length to sub-daily record.\n
         - using sub-daily record at target station to disaggregate the daily record at the target station.\n
     2. Only daily rainfall at target station is available
         - using nearby locations sub-daily information disaggregate daily rainfall at target location.\n
@@ -74,10 +74,10 @@ def regionalisedsubdailysim(fnameInput, pathSubDaily, targetIndex,
     4. Multiple simulated sequences of daily rainfall at the target station are available. 
         - sub daily rainfall sequences are generated using sub-daily information at the target station.\n
     
-    Step 1: Pre-Compute the Pool - Mix of Step 1 and 2 in Westra et al
-    2012 "Continuous rainfall simulation 1: A regionalised subdaily
-    disaggregation approach". This depends on the user's input of 
-    genSeqOption. Different sequences are generated for each season, because if 
+    Step 1: Pre-Compute the Pool - Mix of Step 1 and 2 in Westra et al 2012 
+    "Continuous rainfall simulation 1: A regionalised subdaily disaggregation approach". 
+    This depends on the user's input of genSeqOption. 
+    Different sequences are generated for each season, because if 
     genSeqOption = 3 then there may be different stations per
     season.  However, if the target data is known (genSeqOption <= 2)
     then it is the same data set for each season.  Finally, if if there is 
@@ -89,14 +89,14 @@ def regionalisedsubdailysim(fnameInput, pathSubDaily, targetIndex,
     the method of fragments is only concerned with one parameter that can be computed up
     front:
     
-      1) the day of the year the rain fell, e.g. November 23rd, and not which
-    year and the where is already handled with the "nearby" stations".
+    1) the day of the year the rain fell, e.g. November 23rd, and not which
+        year and the where is already handled with the "nearby" stations".
     
     The second logical must be computed sliding through the target daily
     series:
 
-      2) a logical if the wet states for the previous and next day are the
-    same as from the target daily sequence.
+    2) a logical if the wet states for the previous and next day are the
+        same as from the target daily sequence.
     
     The general process is then to loop over the seasons and then each station
     within that season. From there we compute the sequences.
@@ -115,6 +115,7 @@ def regionalisedsubdailysim(fnameInput, pathSubDaily, targetIndex,
     Step 2 b) Dissagregation Loop
 
     Save Data
+    
 
     Parameters
     ----------
