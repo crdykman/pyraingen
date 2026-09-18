@@ -115,15 +115,22 @@ def targetStations(param, param_path, genSeqOption3, stnDetails):
                 # exponetiation is computationally expensive so only do it if
                 # we have to, that is for loopStation != idxTarget.
                 if loopStation != idxTarget:
-                    invPredictor[loopStation, loopAttr] = (
-                        1.0 / (1.0 + math.exp(-1 * (
+                    # When the target is present in the station list,
+                    # idxTarget comes from np.where() and is a tuple, so each
+                    # delta above is a one-element array rather than a scalar.
+                    # numpy < 2 converted that silently for math.exp(); numpy 2
+                    # raises. Convert explicitly, which reproduces the old
+                    # behaviour for both the array and the plain-scalar case.
+                    exponent = -1 * (
                         modelCoeffsSubSet[0]
                         + modelCoeffsSubSet[1] * deltaLat
                         + modelCoeffsSubSet[2] * deltaLon
                         + modelCoeffsSubSet[3] * deltaLatLon
                         + modelCoeffsSubSet[4] * deltaDistToCoast
                         + modelCoeffsSubSet[5] * deltaElevation
-                        + modelCoeffsSubSet[6] * deltaTemp)))
+                        + modelCoeffsSubSet[6] * deltaTemp)
+                    invPredictor[loopStation, loopAttr] = (
+                        1.0 / (1.0 + math.exp(float(np.ravel(exponent)[0])))
                         )
                     if invPredictor[loopStation, loopAttr] > invPredMax[loopAttr]:
                         invPredMax[loopAttr] = invPredictor[loopStation, loopAttr]
