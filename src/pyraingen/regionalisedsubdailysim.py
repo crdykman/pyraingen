@@ -325,7 +325,10 @@ def regionalisedsubdailysim(fnameInput, pathSubDaily, targetIndex,
         if param['targetIndex'] not in stnDetails['stnIndex']:
             raise ValueError('Target station not found in reference stations')
         else:
-            idxTarget = stnDetails['stnIndex'].index(param['targetIndex'])
+            # stnIndex is an ndarray from loadSubDailyStationMeta, so the list
+            # .index() method is not available.
+            idxTarget = int(np.flatnonzero(
+                stnDetails['stnIndex'] == param['targetIndex'])[0])
             nearStationIdx = np.ones((nSeasons,1)) * idxTarget
             del idxTarget
 

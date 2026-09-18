@@ -25,8 +25,16 @@ def aggregateRainfall(rainfallSeries, nRecordsToAggregate):
     #   2022-05-23
 
     # Define some utility constants:
-    nRecordsPerDay = 240
     nRecordsToAggregate = int(nRecordsToAggregate)
+    # Derive the records per day from the data rather than assuming six-minute
+    # sampling, so non-default sampling intervals aggregate correctly.
+    nRecordsPerDay = np.size(rainfallSeries, axis=2)
+    if nRecordsPerDay % nRecordsToAggregate != 0:
+        raise ValueError(
+            f"{nRecordsToAggregate} records per aggregation does not divide "
+            f"evenly into {nRecordsPerDay} records per day; the remainder "
+            "would be silently discarded"
+        )
 
     rainfallAggregated = np.zeros((np.size(rainfallSeries, axis=0),
                                     np.size(rainfallSeries, axis=1),

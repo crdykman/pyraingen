@@ -13,7 +13,13 @@ from .global_ import idxfebTwentyNine
 from .global_ import recordsPerDay
 from .global_ import yesterday, today, tomorrow
 
-@njit
+# nogil=True matters: regionalisedsubdailysim dispatches this through
+# joblib's threading backend, and a numba nopython function holds the GIL
+# unless told otherwise, so without it the "parallel" simulations run one at a
+# time. Safe here because param, nGoodDays and the three fragment arrays are
+# only read, every write targets a function-local array, and numba keeps its
+# random state per thread.
+@njit(nogil=True)
 def subDailyDisaggregation(targetDailyRain, param,
             nGoodDays, fragments, fragmentsState, fragmentsDailyDepth):
     """Sub-daily disaggregation based on
@@ -116,8 +122,20 @@ def subDailyDisaggregation(targetDailyRain, param,
                 workingDailyDepth[yesterday] = 0.0
                 workingDailyDepth[today] = targetDailyRain[idxDayLinear]
                 workingDailyDepth[tomorrow] = targetDailyRain[idxDayLinear+1]
-            elif (loopDay == (nDaysCurrYear-1) or loopDay == param['DayEnd']) and loopYear ==param['simYearEnd']:
-                # And assume the last day is also dry
+            elif (loopDay == (ndaysYearLeap-1) or loopDay == param['DayEnd']) and loopYear ==param['simYearEnd']:
+                # And assume the last day is also dry.
+                #
+                # The test is against ndaysYearLeap-1, not nDaysCurrYear-1: the
+                # loop always runs over ndaysYearLeap and skips 29 February in
+                # non-leap years, so the final day sits at index 365 either way.
+                # Using nDaysCurrYear-1 made this branch fire a day early *and*
+                # again at 365 in non-leap years, disaggregating the last two
+                # days as if each were the end of the record.
+                #
+                # The window is shifted here as in every other branch, so that
+                # today holds this day's depth rather than the previous day's.
+                workingDailyDepth[yesterday] = workingDailyDepth[today]
+                workingDailyDepth[today]     = workingDailyDepth[tomorrow]
                 workingDailyDepth[tomorrow] = 0.0
             elif (loopDay == idxfebTwentyNine and
                 nDaysCurrYear != ndaysYearLeap): 

@@ -31,6 +31,7 @@ def readData(fnameInput):
     """
     ds=nc.Dataset(fnameInput)
     daySeries = ds['day'][:].data
+    ds.close()
     dayVecStart = jdToDateVec(daySeries[0])
     dayVecEnd = jdToDateVec(daySeries[-1])
     simYearStart = int(dayVecStart[0])

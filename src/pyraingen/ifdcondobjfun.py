@@ -57,7 +57,10 @@ def ifdcondobjfun(targetIFD, simulatedIFD, Freq):
     #   simulatedIFD matrix.
     rmae = np.zeros((np.size(targetIFD, axis=1)))
     for loopDuration in np.arange(0,np.size(targetIFD, axis=1),1):
-        meanSims = np.mean(np.squeeze(simulatedIFD[indexFrequency,:,loopDuration]), axis=1)
+        # Index explicitly rather than squeezing: np.squeeze also collapses the
+        # simulation axis when nSims == 1, which made the mean below raise.
+        sims = simulatedIFD[indexFrequency[:, 0], :, loopDuration]
+        meanSims = np.mean(sims, axis=1)
         rmae[loopDuration] = (
             np.mean(abs(meanSims - targetIFD[:, loopDuration]))
             / np.mean(targetIFD[:, loopDuration])

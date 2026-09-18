@@ -71,8 +71,13 @@ def getFragments(nSeasons, nGoodDays, dailyWetState, dailyDepth, stnDetails, nea
     for loopSeason in range(nSeasons):
         # Append Season Array to list
         maxNGoodDays = int(np.max(nGoodDays[loopSeason]))
+        # float32 halves what is by far the largest allocation in the package
+        # (366 x maxNGoodDays x recordsPerDay per season). The fragments hold
+        # rainfall derived from integer 0.1 mm records, so float32 resolves
+        # them far more finely than the data itself.
         fragments.append(
-            np.zeros((ndaysYearLeap, maxNGoodDays, recordsPerDay)))
+            np.zeros((ndaysYearLeap, maxNGoodDays, recordsPerDay),
+                     dtype=np.float32))
         fragmentsState.append(
             np.zeros((ndaysYearLeap, maxNGoodDays)))
         fragmentsDailyDepth.append(
@@ -83,7 +88,7 @@ def getFragments(nSeasons, nGoodDays, dailyWetState, dailyDepth, stnDetails, nea
         for loopStation in range(nearStationIdx[0,:].size):
             # Grab a convenience variable:
             currStnIndex = int(nearStationIdx[loopSeason, loopStation])
-            if currStnIndex == 0:
+            if currStnIndex < 0:
                 # There are no more stations for this season
                 break
             else:
@@ -109,6 +114,7 @@ def getFragments(nSeasons, nGoodDays, dailyWetState, dailyDepth, stnDetails, nea
 
                 tmpSubDaily = np.ones((nDaysKnown, recordsPerDay,)) * missingDay #dimensions flipped
                 tmpSubDaily[dataIdxStart:dataIdxEnd, :] = ds['rainfall'][:].data/10 #
+                ds.close()
                 
                 # This is the index into the days dimension of tmpSubDaily
                 idxDayLinear = 0

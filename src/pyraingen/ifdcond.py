@@ -27,7 +27,14 @@ import random
 import scipy.optimize
 import warnings
 import matplotlib.pyplot as plt
-warnings.simplefilter('ignore', np.RankWarning)
+# np.RankWarning moved to np.exceptions in numpy 1.25 and was removed from the
+# top-level namespace in 2.0. This suppresses the ill-conditioning warning from
+# the cubic polyfit in Step 3, which is fitted to only len(Freq) points.
+try:
+    _RankWarning = np.exceptions.RankWarning   # numpy >= 1.25
+except AttributeError:                         # numpy 1.23 - 1.24
+    _RankWarning = np.RankWarning
+warnings.simplefilter('ignore', _RankWarning)
 
 ## Defined Functions
 from .readsynthrainnetcdf import readSynthRainNetCDF
@@ -49,7 +56,7 @@ def ifdcond(fileNameInput, fileNameOutput, fileNameTargetIFD,
             TargetIFDdurations = [30, 60, 360, 720], 
             AEP = [63.20, 50, 20, 10, 5, 2],
             nRecordsPerDay = 240, minsPerSample = 6,
-            massScale = 1, plot=True):
+            massScale = 1, plot=True, seed=None):
     """Algorithm from Fitsum et al (2016) for Constraining continuous 
     rainfall simulations for derived design flood estimation.
 
@@ -72,7 +79,8 @@ def ifdcond(fileNameInput, fileNameOutput, fileNameTargetIFD,
         Defailt is [30, 60, 360, 720].
     TargetIFDdurations : list
         IFD durations in input target IFD data to be corrected.
-        (i.e. subset of TargetIFDdurationsEst)
+        Must currently equal TargetIFDdurationsEst; correcting a proper
+        subset of the estimated durations is not supported.
         Defailt is [30, 60, 360, 720]. 
     AEP : list
         List of return periods (frequency)  in input target IFD data to be corrected.
@@ -90,6 +98,10 @@ def ifdcond(fileNameInput, fileNameOutput, fileNameTargetIFD,
         True to output Raw vs Conditioned comparison plots for each duration.
         False to suppress.
         Default is True
+    seed : int
+        Seed for the random subsample of simulations taken when nSims < 100.
+        Leave as None for a different subsample on every run.
+        Default is None.
 
     Returns
     ----------
@@ -112,7 +124,10 @@ def ifdcond(fileNameInput, fileNameOutput, fileNameTargetIFD,
     dayVector = dayVector + datevecToJD(date(int(yearStart),1,1))
 
     if nSims < 100:
-        SimsIndex = random.sample(range(0, np.size(dataRaw, axis=0)), nSims)
+        # A local generator so the subsample is reproducible when a seed is
+        # given, without disturbing the global random state.
+        SimsIndex = random.Random(seed).sample(
+            range(0, np.size(dataRaw, axis=0)), nSims)
         dataRaw = dataRaw[SimsIndex,:,:]
 
 
@@ -122,7 +137,9 @@ def ifdcond(fileNameInput, fileNameOutput, fileNameTargetIFD,
     # Probability stored in Freq.
     # NB: they are sorted in an alternate order though.  For example the
     # correct plot would be: plot(Freq, targetIFD(end:-1:1, 1))
-    targetIFD = np.loadtxt(fileNameTargetIFD,delimiter=',')
+    # ndmin=2 keeps a single-duration target IFD two-dimensional; without it
+    # loadtxt returns a 1-D array and every targetIFD[:, column] access fails.
+    targetIFD = np.loadtxt(fileNameTargetIFD, delimiter=',', ndmin=2)
 
     ## General Constants and Preparation
     # Are we dubugging:
@@ -136,6 +153,30 @@ def ifdcond(fileNameInput, fileNameOutput, fileNameTargetIFD,
     # numbers as required!!!
     TargetIFDduration = np.array(TargetIFDdurations)
     #TargetIFDduration = TargetIFDdurationEst[[0, 2, 4]]
+
+    # Every duration to be corrected must have a column in the target IFD.
+    # Without this the boolean selection of that column later yields an empty
+    # array and the failure surfaces much further downstream.
+    # NB: despite the docstring, TargetIFDdurations must currently *equal*
+    # TargetIFDdurationsEst, not merely be a subset of it. ifdcondobjfun loops
+    # over the columns of targetIFD but indexes the duration axis of the
+    # simulated IFD with the same counter, so a proper subset raises an
+    # IndexError once the two lengths diverge.
+    if list(TargetIFDdurations) != list(TargetIFDdurationsEst):
+        missingDurations = sorted(
+            set(TargetIFDdurations) - set(TargetIFDdurationsEst))
+        if missingDurations:
+            raise ValueError(
+                f'TargetIFDdurations {missingDurations} are not present in '
+                f'TargetIFDdurationsEst {list(TargetIFDdurationsEst)}; every '
+                'duration to be corrected must have a column in the target IFD'
+            )
+        raise NotImplementedError(
+            'TargetIFDdurations must currently equal TargetIFDdurationsEst '
+            f'(got {list(TargetIFDdurations)} and '
+            f'{list(TargetIFDdurationsEst)}); correcting a proper subset of '
+            'the estimated durations is not supported'
+        )
 
     # Frequency
     # Can only constrain to recurrence intervals that would be present in the record!
@@ -172,7 +213,7 @@ def ifdcond(fileNameInput, fileNameOutput, fileNameTargetIFD,
     ## Reference IFD Computation
     # This is the first time through and this IFD for the raw data
     # set is not computed.  So do it
-    IFDRaw = computeIFD(dataRaw, yearsVector, TargetIFDduration)
+    IFDRaw = computeIFD(dataRaw, yearsVector, TargetIFDduration, minsPerSample)
 
     # Also compute the reference objective function value from the
     # first time through.
@@ -311,10 +352,23 @@ def ifdcond(fileNameInput, fileNameOutput, fileNameTargetIFD,
                     # not equal to six minutes we will have to multiply that
                     # index by the number of elements we are accumulating at to
                     # get the correct index into the full array.
-                    tmpAcummulatedData = np.copy(dataAccumulated[loopSim, :, :])
-                    tmpAcummulatedData[years[loopYear] != yearsVector, :] = 0
-                    tmpMaxValue = tmpAcummulatedData.max()
-                    tmpMaxIndex = tmpAcummulatedData.ravel(order='C').argmax() #index into flattened array
+                    # Slice this year's rows rather than copying the whole
+                    # simulation and zeroing the rest: the copy alone was
+                    # ~30 MB per year, per simulation, per duration, per
+                    # recursion. Days are chronological so a year is contiguous,
+                    # and both the slice and the ravel below are views.
+                    rowIdx = np.flatnonzero(yearsVector == years[loopYear])
+                    rowStart, rowStop = rowIdx[0], rowIdx[-1] + 1
+                    yearBlock = dataAccumulated[loopSim, rowStart:rowStop, :]
+                    tmpMaxValue = yearBlock.max()
+                    if tmpMaxValue == 0:
+                        # Preserves the previous behaviour: with everything
+                        # outside the year zeroed, argmax over an all-zero
+                        # array returned element 0 of the whole series.
+                        tmpMaxIndex = 0
+                    else:
+                        tmpMaxIndex = (rowStart * yearBlock.shape[1]
+                                       + yearBlock.ravel(order='C').argmax())
 
                     annualMaxValue[loopSim, loopYear] = tmpMaxValue
 
@@ -363,7 +417,7 @@ def ifdcond(fileNameInput, fileNameOutput, fileNameTargetIFD,
                         del additionalLength, correctionStride
                         del correctionIndexLinear
 
-                    del tmpAcummulatedData, tmpMaxIndex, tmpMaxValue
+                    del yearBlock, tmpMaxIndex, tmpMaxValue
 
             ##############################################################################
             print(f'Step 2.{currentRec+1}.{currentDur+1}: Sort and Rank Values')
@@ -397,11 +451,12 @@ def ifdcond(fileNameInput, fileNameOutput, fileNameTargetIFD,
             # compute as normal and the indices and sizes will work out.
             tmpData = np.copy(dataRaw).reshape(
                 (nSims, nRecordsPerDay*NoDays), order='C')
-            tmpLogi = np.copy(annualMaxIndexLogical).reshape(
+            # A view, not a copy: tmpLogi is only ever read, so copying the
+            # full boolean array here was unnecessary.
+            tmpLogi = annualMaxIndexLogical.reshape(
                 (nSims, nRecordsPerDay*NoDays), order='C')
 
-            for loopSim in range(nSims):
-                tmpData[loopSim, tmpLogi[loopSim, :]] = 0
+            tmpData[tmpLogi] = 0
 
             nonExtremeSortedValue = np.sort(tmpData, axis=1)
             nonExtremeSortedIndex = np.argsort(tmpData, axis=1)
@@ -546,7 +601,15 @@ def ifdcond(fileNameInput, fileNameOutput, fileNameTargetIFD,
                         * meanNonExtremeRank) - rhsExtreme)
                     )
                 # Then minimise:
-                b, fval,_ ,_ , flag = scipy.optimize.fmin(func=eqll, x0=0, full_output=True)
+                b, fval,_ ,_ , flag = scipy.optimize.fmin(
+                    func=eqll, x0=0, full_output=True, disp=False)
+                if flag != 0:
+                    warnings.warn(
+                        'the non-extreme exponent "b" did not converge '
+                        f'(fmin flag {flag}); the correction for recursion '
+                        f'{currentRec+1}, duration {currentDur+1} may be '
+                        'unreliable'
+                    )
                 # Now back substitute into Equation 12 to directly compute "a":
                 a = extremeFit[-1] / (meanNonExtremeRankLength ** b)  
 
@@ -613,7 +676,8 @@ def ifdcond(fileNameInput, fileNameOutput, fileNameTargetIFD,
             # Step 5: Test the correction skill
             # The process is based on comparing our computed IFD from the
             # corrected data against a known target IFD.
-            IFDCorrected = computeIFD(dataRaw, yearsVector, TargetIFDduration)
+            IFDCorrected = computeIFD(dataRaw, yearsVector, TargetIFDduration,
+                                      minsPerSample)
 
             # Now compare our corrected IFD with that of the target via the
             # objective function
@@ -629,33 +693,38 @@ def ifdcond(fileNameInput, fileNameOutput, fileNameTargetIFD,
                 del tmp
 
     if plot == True:
-        fig, ax = plt.subplots(nrows=len(TargetIFDduration), ncols=1, figsize=(10,len(TargetIFDduration)*5))
+        # squeeze=False keeps ax a 2-D array even for a single duration, where
+        # plt.subplots would otherwise return a bare Axes and ax[i] would raise.
+        fig, ax = plt.subplots(nrows=len(TargetIFDduration), ncols=1,
+                               figsize=(10,len(TargetIFDduration)*5),
+                               squeeze=False)
         for i in range(len(TargetIFDduration)):
             # Raw IFD
             if i == len(TargetIFDduration)-1:
-                ax[i].set_xlabel('Frequency (years)', fontsize=14)
+                ax[i, 0].set_xlabel('Frequency (years)', fontsize=14)
             else:
-                ax[i].set_xlabel('')
-            ax[i].set_ylabel('Depth (mm)', fontsize=14)
-            ax[i].fill_between(np.arange(len(years)), 
+                ax[i, 0].set_xlabel('')
+            ax[i, 0].set_ylabel('Depth (mm)', fontsize=14)
+            ax[i, 0].fill_between(np.arange(len(years)), 
                                 IFDRaw[:,:,i].max(axis=1),
                                 IFDRaw[:,:,i].min(axis=1),
                                 alpha=0.1, label='Raw Simulations Range')
-            ax[i].plot(np.median(IFDRaw[:,:,i], axis=1),
+            ax[i, 0].plot(np.median(IFDRaw[:,:,i], axis=1),
                         linewidth=2, alpha=0.8, 
                         label=f'Raw Median Depth-Frequency {TargetIFDduration[i]} min')
             #Conditioned IFD
-            ax[i].fill_between(np.arange(len(years)), 
+            ax[i, 0].fill_between(np.arange(len(years)), 
                                 IFDCorrected[:,:,i].max(axis=1),
                                 IFDCorrected[:,:,i].min(axis=1),
                                 alpha=0.1, label='Cond Simulations Range')
-            ax[i].plot(np.median(IFDCorrected[:,:,i], axis=1),
+            ax[i, 0].plot(np.median(IFDCorrected[:,:,i], axis=1),
                         linewidth=2, alpha=0.8, 
                         label=f'Cond Median Depth-Frequency {TargetIFDduration[i]} min')
-            ax[i].set_xscale('log')
+            ax[i, 0].set_xscale('log')
             if i == 0:
-                ax[i].legend()
+                ax[i, 0].legend()
         fig.savefig('ifdcond_plot.png')
+        plt.close(fig)
     
     ## Dump the Processed Time Series to a NetCDF
     print('Saving conditioned data')

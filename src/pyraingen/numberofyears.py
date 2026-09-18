@@ -31,6 +31,15 @@ def numberOfYears(nSeasons, stnDetails, nearStationIdx, param_path):
     ----------
     array
         Number of years in each seasonsal pool.
+
+    Notes
+    -----
+    This counts the calendar years *spanned* by each station's record
+    (``endYear - startYear + 1``), not the years of usable data. Gaps within a
+    record and the completeness fraction ``stnIPer`` are both ignored, so a
+    station with a long but sparse record contributes its full span. The pool
+    is therefore an upper bound, and ``param['nYearsPool']`` is reached with
+    fewer stations than the available data alone would justify.
     """
     nYearsPool = np.zeros((nSeasons,1))
     for loopSeason in range(nSeasons):    
@@ -38,7 +47,7 @@ def numberOfYears(nSeasons, stnDetails, nearStationIdx, param_path):
         for loopStation in range(nearStationIdx[0,:].size):
         # Grab a conveniance variable:
             currStnIndex = int(nearStationIdx[loopSeason, loopStation])
-            if currStnIndex == 0:
+            if currStnIndex < 0:
                 # There are no more stations for this season
                 break
             else: 
@@ -48,6 +57,7 @@ def numberOfYears(nSeasons, stnDetails, nearStationIdx, param_path):
                     int(stnDetails['stnIndex'][currStnIndex])))
                 ds=nc.Dataset(fnameNC)
                 daySeries = ds['day'][:].data
+                ds.close()
                 dayVecStart = jdToDateVec(daySeries[0])
                 dayVecEnd = jdToDateVec(daySeries[-1])
                 nYearsPool[loopSeason] += (dayVecEnd[0] 

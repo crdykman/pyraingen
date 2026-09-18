@@ -1,6 +1,6 @@
 import numpy as np
 
-def computeIFD(rainfallSeries, yearsVector, ifdDurations):
+def computeIFD(rainfallSeries, yearsVector, ifdDurations, minsPerSample=6):
     """This function computes an IFD table from the input rainfall series
     based on a set of standard durations and recurrence intervals.  Please
     Note: this may not be as per a full IFD computation but is designed to
@@ -33,9 +33,6 @@ def computeIFD(rainfallSeries, yearsVector, ifdDurations):
     # Standard duration of IFD used
     # NB: ifdDurations are in mintes for compatability with further calculations
 
-    # Number of six minute records per day:
-    nRecordsPerDay = 240
-    minsPerSample = 6
 
     #Extract a conveniance vector of years
     yearsUnique = np.unique(yearsVector)

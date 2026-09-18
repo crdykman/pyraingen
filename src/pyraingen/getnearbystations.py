@@ -1,7 +1,6 @@
 import numpy as np
 import pandas as pd
-import xarray as xr
-import math
+import warnings
 from importlib import resources
 
 def station(param, target, nAttributes=33, fout='nearby_station_details.out'):
@@ -50,8 +49,8 @@ def station(param, target, nAttributes=33, fout='nearby_station_details.out'):
         # As per the original F77 source, also exclude any stations such that:
         #   abs(deltaLon) < 0.001 AND abs(deltaLat) < 0.001
         Targetidx = [i for i in range(len(stnData['INDEX'])) if (
-            stnData['LON'][i] - target['lon'] < 0.001 and
-            stnData['LAT'][i] - target['lat'] < 0.001
+            abs(stnData['LON'][i] - target['lon']) < 0.001 and
+            abs(stnData['LAT'][i] - target['lat']) < 0.001
         )]
         canUseStation[Targetidx] = 0
     
@@ -65,49 +64,52 @@ def station(param, target, nAttributes=33, fout='nearby_station_details.out'):
             param['pathModelCoeffs'] = str(f)
     modelCoeffs = np.transpose(pd.read_csv(param['pathModelCoeffs']).values)
 
-    ## Loop over the Stations
-    invPredictor = np.zeros((len(stnToUse['INDEX']), nAttributes))
-    #sortIdxInvPredictor = np.zeros(np.shape(invPredictor))
-    invPredMax = np.zeros((nAttributes,1))
+    ## Compute the Predictors For Every Station At Once
+    # This was a scalar double loop over stations x attributes, indexing into
+    # xarray DataArrays one element at a time, which cost roughly 200 s for the
+    # 1694 stations in stn_record.csv. The arithmetic below is identical; only
+    # the loop is gone.
     stnWeight = np.zeros((param['nNearStns'],1))
 
-    for loopStation in np.arange(0,len(stnToUse['INDEX']),1):
-        deltaLat = abs(target['lat'] - stnToUse['LAT'][loopStation])
-        deltaLon = abs(target['lon'] - stnToUse['LON'][loopStation])
-        if deltaLat < 0.001 and deltaLon < 0.001:
-            print('warnings.warn(''additional dump'')')
+    lat   = stnToUse['LAT'].values
+    lon   = stnToUse['LON'].values
+    coast = stnToUse['DIST_COAST'].values
+    elev  = stnToUse['ELEVATION'].values
+    tmax  = stnToUse['av_an_tmax'].values
 
-        deltaDistToCoast = (abs(target['distToCoast'] 
-            - stnToUse['DIST_COAST'][loopStation]) 
-            / ((target['distToCoast'] 
-            + stnToUse['DIST_COAST'][loopStation])/2)
-            )
-        deltaElevation = (abs(target['elevation']
-            - stnToUse['ELEVATION'][loopStation])
-            / ((target['elevation'] 
-            + stnToUse['ELEVATION'][loopStation])/2)
-            )
-        deltaLatLon = deltaLat * deltaLon
-        deltaTemp = (abs(target['temp']
-            - stnToUse['av_an_tmax'][loopStation])
+    deltaLat = np.abs(target['lat'] - lat)
+    deltaLon = np.abs(target['lon'] - lon)
+    if np.any((deltaLat < 0.001) & (deltaLon < 0.001)):
+        warnings.warn(
+            'one or more candidate stations are co-located with the target'
         )
 
-        for loopAttr in range(nAttributes):
-            # Extract a subset array to make the code simpler to read:
-            modelCoeffsSubSet = modelCoeffs[loopAttr, :]
+    deltaDistToCoast = (np.abs(target['distToCoast'] - coast)
+                        / ((target['distToCoast'] + coast) / 2))
+    deltaElevation = (np.abs(target['elevation'] - elev)
+                      / ((target['elevation'] + elev) / 2))
+    deltaTemp = np.abs(target['temp'] - tmax)
 
-            invPredictor[loopStation, loopAttr] = (1.0 / (1.0 + math.exp(-1 * (
-                modelCoeffsSubSet[0]
-                + modelCoeffsSubSet[1] * deltaLat
-                + modelCoeffsSubSet[2] * deltaLon
-                + modelCoeffsSubSet[3] * deltaLatLon
-                + modelCoeffsSubSet[4] * deltaDistToCoast
-                + modelCoeffsSubSet[5] * deltaElevation 
-                + modelCoeffsSubSet[6] * deltaTemp)))
-                )
-            if invPredictor[loopStation, loopAttr] > invPredMax[loopAttr]:
-                invPredMax[loopAttr] = invPredictor[loopStation, loopAttr]
-        
+    # Columns match the coefficient order: intercept, lat, lon, lat*lon,
+    # distance to coast, elevation, temperature.
+    design = np.column_stack([
+        np.ones_like(deltaLat),
+        deltaLat,
+        deltaLon,
+        deltaLat * deltaLon,
+        deltaDistToCoast,
+        deltaElevation,
+        deltaTemp,
+    ])
+    # einsum rather than the @ operator so this does not depend on a working
+    # BLAS; at this size the two are equivalent in speed.
+    invPredictor = 1.0 / (1.0 + np.exp(
+        -np.einsum('ij,kj->ik', design, modelCoeffs[:nAttributes, :7])
+    ))
+
+    # The running maximum in the original loop is just the column maximum.
+    invPredMax = invPredictor.max(axis=0)
+
     ## Now, for this season compute the combined predictor values
     # This is based on the F77 implementation and is a multi-step operation:
     #   -) for each attribute
@@ -115,16 +117,7 @@ def station(param, target, nAttributes=33, fout='nearby_station_details.out'):
     #       -) sort descending
     #       -) store the rank INDEX, not the value
     #   -) add the
-
-    pValue = np.zeros((len(stnToUse['INDEX']),1)) 
-
-    for loopStation in range(len(stnToUse['INDEX'])):
-            for loopAttr in range(nAttributes):
-                pValue[loopStation] = (pValue[loopStation] + 
-                    invPredictor[loopStation, loopAttr] / invPredMax[loopAttr]
-                )
-
-    pValue = pValue / nAttributes
+    pValue = (invPredictor / invPredMax).sum(axis=1)[:, None] / nAttributes
 
     # Now sort and get the rank index
     pValueSort = np.sort(pValue, axis=0)[::-1]

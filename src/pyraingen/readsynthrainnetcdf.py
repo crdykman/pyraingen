@@ -39,5 +39,6 @@ def readSynthRainNetCDF(fname):
 
     #Preallocate RAM
     data = ds['rainfall'][:].data
+    ds.close()
 
     return yearStart, yearEnd, data

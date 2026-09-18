@@ -34,5 +34,6 @@ def getNDailySims(fnameNC):
     for key in ds.dimensions.keys():
         if targetVarName == key:
             nDailySims = len(ds.dimensions[key])
+    ds.close()
 
     return int(nDailySims)

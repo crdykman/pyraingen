@@ -48,6 +48,7 @@ def loadSubDailyStationMeta(fname):
     stnElevation  = ds['elevation'][:].data
     stnDistCoast  = ds['disttocoast'][:].data
     stnTemp       = ds['avg_annual_max_daily_temp'][:].data
+    ds.close()
 
     # Convert into a structure (matlab) / dictionary (python)
     

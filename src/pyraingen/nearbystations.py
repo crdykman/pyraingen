@@ -105,10 +105,10 @@ def nearbystations(pathIndex, pathCoeff, targetIndex,
                                                 genSeqOption3, 
                                                 stnDetails)
 
-    s1 = ([stnDetails['stnIndex'][id] for id in nearStationIdx[0, :].astype(int) if id > 0])
-    s2 = ([stnDetails['stnIndex'][id] for id in nearStationIdx[1, :].astype(int) if id > 0])
-    s3 = ([stnDetails['stnIndex'][id] for id in nearStationIdx[2, :].astype(int) if id > 0])
-    s4 = ([stnDetails['stnIndex'][id] for id in nearStationIdx[3, :].astype(int) if id > 0])
+    s1 = ([stnDetails['stnIndex'][id] for id in nearStationIdx[0, :].astype(int) if id >= 0])
+    s2 = ([stnDetails['stnIndex'][id] for id in nearStationIdx[1, :].astype(int) if id >= 0])
+    s3 = ([stnDetails['stnIndex'][id] for id in nearStationIdx[2, :].astype(int) if id >= 0])
+    s4 = ([stnDetails['stnIndex'][id] for id in nearStationIdx[3, :].astype(int) if id >= 0])
     
     subdailystns = list(set(s1 + s2 + s3 + s4))
 

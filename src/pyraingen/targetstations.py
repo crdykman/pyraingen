@@ -48,7 +48,12 @@ def targetStations(param, param_path, genSeqOption3, stnDetails):
     # read additional data from our genSeqOption3 data to become our
     # reference.
     if param['targetIndex'] in stnDetails['stnIndex']:
-        idxTarget = np.where(stnDetails['stnIndex'] == param['targetIndex'])
+        # A plain int, not the tuple np.where() returns: the
+        # `loopStation != idxTarget` test below compares against an integer
+        # loop counter, so a tuple there is never equal and the target station
+        # would be scored against itself and rank as its own nearest neighbour.
+        idxTarget = int(np.flatnonzero(
+            stnDetails['stnIndex'] == param['targetIndex'])[0])
     else:
         idxTarget = np.size(stnDetails['stnIndex'], axis=0)
         #assuming all arrays are of same length so indicies match
@@ -60,7 +65,9 @@ def targetStations(param, param_path, genSeqOption3, stnDetails):
         stnDetails['stnTemp']      = np.append(stnDetails['stnTemp'], genSeqOption3['temperature'])
 
     ## Allocate Ram
-    nearStationIdx = np.zeros((nSeasons,(np.size(stnDetails['stnIndex'], axis=0))))
+    # -1 marks "no station": 0 is a valid index into stnDetails.
+    nearStationIdx = np.full(
+        (nSeasons, (np.size(stnDetails["stnIndex"], axis=0))), -1.0)
 
     ## Read the Coefficients Data
     # Check directory for importing function
@@ -115,22 +122,15 @@ def targetStations(param, param_path, genSeqOption3, stnDetails):
                 # exponetiation is computationally expensive so only do it if
                 # we have to, that is for loopStation != idxTarget.
                 if loopStation != idxTarget:
-                    # When the target is present in the station list,
-                    # idxTarget comes from np.where() and is a tuple, so each
-                    # delta above is a one-element array rather than a scalar.
-                    # numpy < 2 converted that silently for math.exp(); numpy 2
-                    # raises. Convert explicitly, which reproduces the old
-                    # behaviour for both the array and the plain-scalar case.
-                    exponent = -1 * (
+                    invPredictor[loopStation, loopAttr] = (
+                        1.0 / (1.0 + math.exp(-1 * (
                         modelCoeffsSubSet[0]
                         + modelCoeffsSubSet[1] * deltaLat
                         + modelCoeffsSubSet[2] * deltaLon
                         + modelCoeffsSubSet[3] * deltaLatLon
                         + modelCoeffsSubSet[4] * deltaDistToCoast
                         + modelCoeffsSubSet[5] * deltaElevation
-                        + modelCoeffsSubSet[6] * deltaTemp)
-                    invPredictor[loopStation, loopAttr] = (
-                        1.0 / (1.0 + math.exp(float(np.ravel(exponent)[0])))
+                        + modelCoeffsSubSet[6] * deltaTemp)))
                         )
                     if invPredictor[loopStation, loopAttr] > invPredMax[loopAttr]:
                         invPredMax[loopAttr] = invPredictor[loopStation, loopAttr]
