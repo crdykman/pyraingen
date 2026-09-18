@@ -43,10 +43,17 @@ If you are proposing a feature:
 Ready to contribute? Here's how to set up `pyraingen` for local development.
 
 1. Download a copy of `pyraingen` locally.
-2. Install `pyraingen` using `poetry`:
+2. Install `pyraingen` in editable mode, with the test dependencies:
 
     ```console
-    $ poetry install
+    $ pip install -e ".[dev]"
+    ```
+
+    To build the distribution artefacts:
+
+    ```console
+    $ pip install build
+    $ python -m build
     ```
 
 3. Use `git` (or similar) to create a branch for local development and make your changes:

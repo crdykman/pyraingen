@@ -19,7 +19,7 @@ from pyraingen.regionalisedsubdailysim import regionalisedsubdailysim
 from pyraingen.ifdcond import ifdcond
 ```
 
-Go to [`pyraingen.readthedocs.io`](https://pyraingen.readthedocs.io) for further documentation.
+See [`docs/example.ipynb`](docs/example.ipynb) for a worked example of all three.
 
 ## Contributing
 

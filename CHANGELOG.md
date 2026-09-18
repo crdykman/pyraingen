@@ -1,5 +1,31 @@
 # Changelog
 
+## v2.0.1 (18/09/2026)
+
+Packaging and documentation housekeeping. No functional change: the wheel's
+payload is byte-for-byte the same set of files as 2.0.0.
+
+- **Read the Docs references removed**, as the site is no longer available for
+  this package. Deletes `.readthedocs.yml`, drops the
+  `pyraingen.readthedocs.io` link from the README in favour of pointing at
+  `docs/example.ipynb`, and removes the `sphinx-rtd-theme` dependency. The
+  Sphinx config now uses `alabaster`, which ships with Sphinx, so `docs/` still
+  builds locally.
+- **Build backend switched from `poetry-core` to `setuptools`**, with metadata
+  moved to the standard PEP 621 `[project]` table. `python -m build` remains
+  the way to build. `poetry.lock` is removed.
+  - Package data is now declared explicitly via
+    `[tool.setuptools.package-data]`. setuptools ships only `.py` files by
+    default, and the generator loads its station record, regression
+    coefficients and example data through `importlib.resources`, so the
+    `.csv`, `.dat`, `.nc` and `.txt` files have to be named. The built wheel
+    was diffed against the published 2.0.0 wheel to confirm the file set is
+    unchanged.
+- The `license` metadata field is **no longer set**. poetry recorded the
+  literal string `"None"`, which is not a valid SPDX expression and is
+  rejected by `setuptools>=77`. The terms remain stated in `README.md`; set an
+  SPDX expression in `pyproject.toml` if the metadata should carry them.
+
 ## v2.0.0 (18/09/2026)
 
 The regionalised daily generator is now pure Python. The Fortran 77
