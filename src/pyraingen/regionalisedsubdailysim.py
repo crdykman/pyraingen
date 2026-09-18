@@ -424,7 +424,7 @@ def regionalisedsubdailysim(fnameInput, pathSubDaily, targetIndex,
     from .getfragments import getFragments
     fragments, fragmentsState, fragmentsDailyDepth = getFragments(nSeasons, 
                                                         nGoodDays, dailyWetState, 
-                                                        dailyDepth,stnDetails, 
+                                                        dailyDepth, stnDetails, 
                                                         nearStationIdx, param, 
                                                         param_path)
     del dailyDepth, dailyWetState
@@ -438,7 +438,7 @@ def regionalisedsubdailysim(fnameInput, pathSubDaily, targetIndex,
     # read each one individually.  The OR loopSim == 1 is to handle where
     # we have a known target, with daily, subdaily or a mix, and we only
     # load it once, compute the statistics and use therein.
-    print('Step 2 a) Load Daily Reference Data')
+    print('Step 2 (a) Load Daily Reference Data')
     from .readdata import readData
     from .paddata import padData
     (ds,
@@ -499,7 +499,7 @@ def regionalisedsubdailysim(fnameInput, pathSubDaily, targetIndex,
     param['DayEnd'] = DayEnd
 
     ## Step 2 b) Dissagregation Loop
-    print('Step 2 b) Performing subdaily disaggregation')
+    print('Step 2 (b) Performing subdaily disaggregation')
     # from .subdailysimloop0 import subDailySimLoop0
     # from .subdailysimloop1 import subDailySimLoop1
     from joblib import Parallel, delayed

@@ -129,16 +129,15 @@ def getFragments(nSeasons, nGoodDays, dailyWetState, dailyDepth, stnDetails, nea
                                 tmpSubDaily[idxDayLinear,:]
                             
                             fragmentsState[loopSeason][loopDay,int(fragmentCounter[loopDay])]= \
-                                dailyWetState[loopSeason][loopDay, idxYear]
+                                dailyWetState[loopSeason][loopDay,idxYear]
                             
                             fragmentsDailyDepth[loopSeason][loopDay,int(fragmentCounter[loopDay])]= \
-                                dailyDepth[loopSeason][loopDay,idxYear]
+                                dailyDepth[loopSeason][loopDay,idxYear]                           
 
                             # Sanity Check:
                             if (abs(np.sum((
                                 fragments[loopSeason][loopDay,int(fragmentCounter[loopDay]),:]))
                                 - dailyDepth[loopSeason][loopDay,idxYear]) > 1):
-                                
                                 plt.plot((
                                 fragments[loopSeason][loopDay,int(fragmentCounter[loopDay]),:]
                                 ))

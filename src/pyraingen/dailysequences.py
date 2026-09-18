@@ -152,6 +152,7 @@ def dailySequences(nSeasons,
                         elif loopDay == (ndaysYearLeap-1) and loopYear == yearEnd:
                             # This is the end of our sequence, assume dry as
                             # per the start
+                            idxDayLinear = idxDayLinear + 1 #CRD 18/02/2025
                             workingRainDepth[tomorrow] = 0
                         else:
                             # This is a normal day out in the middle of the
