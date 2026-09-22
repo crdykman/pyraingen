@@ -1,5 +1,63 @@
 # Changelog
 
+## v2.1.1 (22/09/2026)
+
+**The subdaily generator now runs end to end.** It never has before on the
+shipped example data: the nearby-station search returned stations with no
+bundled pluviograph file, and beyond that the path hit a series of numpy >= 2
+failures that were unreachable while the run died on a missing file.
+
+Supersedes 2.1.0, which was tagged but never released to PyPI.
+
+### Fixed
+
+- **`readData` closed the dataset it hands back to its caller.** A regression
+  from the netCDF handle cleanup in 2.1.0: `readData` is the one of those seven
+  call sites that returns its open dataset, and `regionalisedsubdailysim` reads
+  `rainfall` from it afterwards in all three `genSeqOption` branches, so the
+  run failed with `RuntimeError: NetCDF: Not a valid ID`. Ownership now sits
+  with the caller, which closes it once every branch has read from it, so the
+  handle is still not leaked.
+- **Two more one-element-array conversions broke on numpy >= 2**, the same root
+  cause as the `targetstations` fix in 2.1.0. `dailySequences` read
+  `numberOfYears`' `(nSeasons, 1)` result with a single subscript, and
+  `getFragments` did the same with its `fragmentCounter` in five places. Both
+  raised `TypeError: only 0-dimensional arrays can be converted to Python
+  scalars`. `maxGoodDays` already indexed the same value correctly.
+
+### Added
+
+- **The six missing pluviograph files** in the subdaily example data:
+  `plv009789`, `plv061029`, `plv061178`, `plv061209`, `plv063253` and
+  `plv070080`. Two of these were needed by 2.0.0 and already absent; the other
+  four became necessary in 2.1.0 once the target stopped selecting itself as
+  its own nearest neighbour. `plv007080.nc`, which the documented example does
+  not select, is removed.
+- **Tests for the subdaily and IFD paths** (27), neither of which had any
+  assertions before: their only "tests" were scripts that ran the generator and
+  printed, one pointing at an absolute path that no longer exists. That is why
+  defects such as calling the list method `.index()` on an ndarray survived.
+  Every test was checked by mutation -- each fix reverted in turn and the
+  corresponding test confirmed to fail -- so none is vacuous. All 15 mutations
+  were caught.
+
+### Verified
+
+Running the documented example (target 66037, `genSeqOption=3`) over 28855 days
+and 2 simulations completes in 49 s, and the defining property of the method of
+fragments holds on real data:
+
+| check | result |
+| ----- | ------ |
+| wet days reproducing their daily total within 0.1% | 100.00% of 16616 |
+| median relative error | 1.7e-07 |
+| dry days exactly zero | 100.00% |
+
+Note that the run reports roughly 75 days per simulation, averaging 47-57 mm,
+for which no matching fragment exists in the pool. That is inherent to the
+method rather than a defect, and the code warns about it, but those days are
+filled by fallback rather than by a matched fragment.
+
 ## v2.1.0 (18/09/2026)
 
 Correctness and performance work across the subdaily and IFD code, from a
