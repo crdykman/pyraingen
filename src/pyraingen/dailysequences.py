@@ -62,13 +62,17 @@ def dailySequences(nSeasons,
     workingRainDepth = np.zeros((3,1))
     for loopSeason in range(nSeasons):
         # Allocate RAM for this daily series:
+        # numberOfYears returns shape (nSeasons, 1), so the season entry is a
+        # one-element array. numpy < 2 converted that to a scalar silently;
+        # numpy 2 raises. maxGoodDays already indexes it the same way.
+        nYearsThisSeason = int(nYearsPool[loopSeason][0])
         dailyDepth.append(np.ones(
             (ndaysYearLeap,
-            int(nYearsPool[loopSeason])))
+            nYearsThisSeason))
             *missingDay)
         dailyWetState.append(np.ones(
             (ndaysYearLeap,
-            int(nYearsPool[loopSeason])))
+            nYearsThisSeason))
             *stateBad)
         
         #Counter through the year dimension of our arrays

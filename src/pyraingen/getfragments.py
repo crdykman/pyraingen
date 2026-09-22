@@ -82,7 +82,11 @@ def getFragments(nSeasons, nGoodDays, dailyWetState, dailyDepth, stnDetails, nea
             np.zeros((ndaysYearLeap, maxNGoodDays)))
         fragmentsDailyDepth.append(
             np.zeros((ndaysYearLeap, maxNGoodDays)))
-        fragmentCounter = np.zeros((ndaysYearLeap, 1))
+        # One-dimensional: this is indexed as fragmentCounter[loopDay] and the
+        # result converted with int(). Shaped (ndaysYearLeap, 1) that yields a
+        # one-element array, which numpy < 2 converted silently and numpy 2
+        # rejects.
+        fragmentCounter = np.zeros(ndaysYearLeap)
         #Counter through the year dimension of our arrays
         idxYear = 0
         for loopStation in range(nearStationIdx[0,:].size):
