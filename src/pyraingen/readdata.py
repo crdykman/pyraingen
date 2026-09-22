@@ -31,7 +31,8 @@ def readData(fnameInput):
     """
     ds=nc.Dataset(fnameInput)
     daySeries = ds['day'][:].data
-    ds.close()
+    # NB: ds is returned open on purpose -- the caller reads 'rainfall' from it
+    # and is responsible for closing it.
     dayVecStart = jdToDateVec(daySeries[0])
     dayVecEnd = jdToDateVec(daySeries[-1])
     simYearStart = int(dayVecStart[0])

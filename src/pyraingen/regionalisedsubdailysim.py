@@ -496,6 +496,10 @@ def regionalisedsubdailysim(fnameInput, pathSubDaily, targetIndex,
         DayStart = 0
         DayEnd = ndaysYearLeap-1
 
+    # readData hands back an open dataset; every branch above has now read
+    # what it needs from it.
+    ds.close()
+
     param['simYearStart'] = simYearStart
     param['simYearEnd'] = simYearEnd
     param['DayStart'] = DayStart
